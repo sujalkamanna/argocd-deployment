@@ -1,3 +1,82 @@
+---
+# Redis Deployment + Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:latest
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP
+
+---
+# PostgreSQL Deployment + Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    app: db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:9.4
+        env:
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_PASSWORD
+            value: "postgres"
+        ports:
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+# Vote UI Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,10 +95,12 @@ spec:
     spec:
       containers:
       - name: vote-container
-        image: sujalkamanna/vote-ui:latest  # Replace with your Docker Hub username and image name
+        image: sujalkamanna/vote-ui:latest
         ports:
         - containerPort: 80
+
 ---
+# Result UI Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,10 +119,12 @@ spec:
     spec:
       containers:
       - name: result-container
-        image: sujalkamanna/result-ui:latest  # Replace with your Docker Hub username and image name
+        image: sujalkamanna/result-ui:latest
         ports:
         - containerPort: 80
+
 ---
+# Worker Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,33 +143,37 @@ spec:
     spec:
       containers:
       - name: worker-container
-        image: sujalkamanna/worker:latest  # Replace with your Docker Hub username and image name
+        image: sujalkamanna/worker:latest
         ports:
         - containerPort: 5000
+
 ---
+# Services for Vote, Result, Worker
 apiVersion: v1
 kind: Service
 metadata:
   name: vote-service
 spec:
-  type: LoadBalancer  # Change to NodePort if running locally without cloud provider
+  type: LoadBalancer
   selector:
     app: vote
   ports:
     - port: 80
       targetPort: 80
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: result-service
 spec:
-  type: LoadBalancer  # Change to NodePort if running locally without cloud provider
+  type: LoadBalancer
   selector:
     app: result
   ports:
     - port: 80
       targetPort: 80
+
 ---
 apiVersion: v1
 kind: Service
@@ -98,3 +185,27 @@ spec:
   ports:
     - port: 5000
       targetPort: 5000
+
+---
+# Vote Seeder Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vote-seeder
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      containers:
+      - name: seeder
+        image: sujalkamanna/voting-seeder:latest
+        env:
+          - name: REDIS_HOST
+            value: "redis"
+          - name: POSTGRES_HOST
+            value: "db"
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_PASSWORD
+            value: "postgres"
+      restartPolicy: OnFailure
