@@ -187,25 +187,27 @@ spec:
       targetPort: 5000
 
 ---
-# Vote Seeder Job
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: vote-seeder
 spec:
   backoffLimit: 4
+  ttlSecondsAfterFinished: 300
   template:
     spec:
       containers:
       - name: seeder
         image: sujalkamanna/voting-seeder:latest
         env:
-          - name: REDIS_HOST
-            value: "redis"
-          - name: POSTGRES_HOST
-            value: "db"
-          - name: POSTGRES_USER
-            value: "postgres"
-          - name: POSTGRES_PASSWORD
-            value: "postgres"
+        - name: REDIS_HOST
+          value: "redis"
+        - name: POSTGRES_HOST
+          value: "db"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgres"
+        - name: POSTGRES_DB
+          value: "postgres"
       restartPolicy: OnFailure
