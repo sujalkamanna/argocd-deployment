@@ -193,9 +193,21 @@ metadata:
   name: vote-seeder
 spec:
   backoffLimit: 4
-  ttlSecondsAfterFinished: 300
   template:
     spec:
+      initContainers:
+      - name: wait-for-backend
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Redis..."
+          until nc -z redis 6379; do sleep 2; done
+          echo "Redis is up!"
+          echo "Waiting for Postgres..."
+          until nc -z db 5432; do sleep 2; done
+          echo "Postgres is up!"
       containers:
       - name: seeder
         image: sujalkamanna/voting-seeder:latest
