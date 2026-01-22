@@ -191,6 +191,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: vote-seeder
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   backoffLimit: 4
   template:
@@ -204,10 +207,10 @@ spec:
         - |
           echo "Waiting for Redis..."
           until nc -z redis 6379; do sleep 2; done
-          echo "Redis is up!"
+          echo "Redis ready..."
           echo "Waiting for Postgres..."
           until nc -z db 5432; do sleep 2; done
-          echo "Postgres is up!"
+          echo "Postgres ready..."
       containers:
       - name: seeder
         image: sujalkamanna/voting-seeder:latest
